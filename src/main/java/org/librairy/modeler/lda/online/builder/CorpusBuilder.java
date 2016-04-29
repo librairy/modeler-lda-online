@@ -125,7 +125,7 @@ public class CorpusBuilder {
             executor.execute(() -> {
                 String itemUri = null;
                 try {
-//                LOG.info("Getting item from: " + uri);
+                    LOG.info("Getting item from: " + uri);
                     itemUri = cache.get(uri);
                     Optional<Resource> res = udm.read(Resource.Type.ITEM).byUri(itemUri);
                     if (!res.isPresent()) throw new ExecutionException(new RuntimeException("Item not found"));
@@ -158,7 +158,7 @@ public class CorpusBuilder {
         LOG.info("Retrieving the Vocabulary...");
 
 
-        Broadcast<Map<String, Long>> vocabularyBroadcast = sparkBuilder.sc.broadcast(
+        Broadcast<Map<String, Long>> vocabulary = sparkBuilder.sc.broadcast(
                 (refVocabulary != null) ? refVocabulary :
                         itemsRDD.
                                 flatMap(resource -> resource._2.keySet()).
@@ -172,9 +172,8 @@ public class CorpusBuilder {
 //                        distinct().
 //                        zipWithIndex().
 //                        collectAsMap();
-//        ;
 
-        LOG.info( vocabularyBroadcast.getValue().size() + " words" );
+        LOG.info( vocabulary.getValue().size() + " words" );
 
         LOG.info("Indexing the documents...");
         Map<Long, String> documents = itemsRDD.
@@ -188,13 +187,13 @@ public class CorpusBuilder {
         LOG.info("Building the Corpus...");
 
         JavaPairRDD<Long, Vector> bagsOfWords = itemsRDD.
-                map(resource -> BowBuilder.from(resource._2,vocabularyBroadcast.getValue())).
+                map(resource -> BowBuilder.from(resource._2,vocabulary.getValue())).
                 zipWithIndex().
                 mapToPair(x -> new Tuple2<Long, Vector>(x._2, x._1));
 
         Corpus corpus = new Corpus();
         corpus.setBagsOfWords(bagsOfWords);
-        corpus.setVocabulary(vocabularyBroadcast.getValue());
+        corpus.setVocabulary(vocabulary.getValue());
         corpus.setDocuments(documents);
         return corpus;
 

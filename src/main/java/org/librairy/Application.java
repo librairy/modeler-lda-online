@@ -10,8 +10,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.jms.JndiConnectionFactoryAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
+import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -22,10 +34,28 @@ import java.nio.file.Paths;
  *
  * @author cbadenes
  */
-@SpringBootApplication
-//@EnableAutoConfiguration
+//@SpringBootApplication
+@Configuration
+@EnableAutoConfiguration(exclude = {JndiConnectionFactoryAutoConfiguration.class,DataSourceAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class,JpaRepositoriesAutoConfiguration.class,DataSourceTransactionManagerAutoConfiguration.class})
+@ComponentScan({"org.librairy"})
+@PropertySource({"classpath:application.properties","classpath:boot.properties"})
 //@EnableConfigurationProperties
 public class Application {
+
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {
+        PropertySourcesPlaceholderConfigurer c = new PropertySourcesPlaceholderConfigurer();
+//        c.setLocations(new ClassPathResource("application.properties"),new ClassPathResource("boot.properties"));
+        return c;
+    }
+
+    @Bean
+    public static EmbeddedServletContainerFactory getTomcatEmbeddedFactory(){
+        return new TomcatEmbeddedServletContainerFactory();
+    }
+
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
@@ -36,10 +66,10 @@ public class Application {
             ApplicationContext ctx = SpringApplication.run(Application.class, args);
 
             Integer size        = 50;
-            Double alpha        = 0.1;
-            Double beta         = 0.1;
             Integer topics      = 50;
             Integer iterations  = 50;
+            Double alpha        = 0.1;
+            Double beta         = 0.1;
 
             if (args != null){
 
@@ -79,7 +109,7 @@ public class Application {
             ModelBuilder modelBuilder = ctx.getBean(ModelBuilder.class);
             LocalLDAModel model = modelBuilder.newModel(corpus,alpha,beta,topics,iterations);
 
-            File file = new File("model-"+topics);
+            File file = new File("/opt/spark/inbox/model-"+topics);
             if (file.exists()) Files.delete(Paths.get(file.getAbsolutePath()));
 
             LOG.info("Saving the model: " + file.getAbsolutePath());

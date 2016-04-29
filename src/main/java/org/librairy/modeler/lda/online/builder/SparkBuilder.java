@@ -24,7 +24,10 @@ public class SparkBuilder {
 
     @PostConstruct
     public void setup(){
-        sconf = new SparkConf().setMaster(master).setAppName("librairy.lda.modeler");
+        sconf = new SparkConf().
+                setMaster(master).
+                setAppName("librairy.lda.modeler")
+        ;
 
         sc = new JavaSparkContext(sconf);
     }
