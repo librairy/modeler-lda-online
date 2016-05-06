@@ -1,5 +1,6 @@
 package org.librairy;
 
+import org.apache.spark.mllib.clustering.LDAModel;
 import org.apache.spark.mllib.clustering.LocalLDAModel;
 import org.librairy.modeler.lda.online.builder.CorpusBuilder;
 import org.librairy.modeler.lda.online.builder.ModelBuilder;
@@ -26,8 +27,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Created on 28/04/16:
@@ -53,7 +55,9 @@ public class Application {
 
     @Bean
     public static EmbeddedServletContainerFactory getTomcatEmbeddedFactory(){
-        return new TomcatEmbeddedServletContainerFactory();
+        TomcatEmbeddedServletContainerFactory servlet = new TomcatEmbeddedServletContainerFactory();
+        servlet.setPort(5555);
+        return servlet;
     }
 
 
@@ -107,10 +111,40 @@ public class Application {
             Corpus corpus = corpusBuilder.newTrainingCorpus(size);
 
             ModelBuilder modelBuilder = ctx.getBean(ModelBuilder.class);
-            LocalLDAModel model = modelBuilder.newModel(corpus,alpha,beta,topics,iterations);
+            LDAModel model = modelBuilder.newModel(corpus,alpha,beta,topics,iterations);
 
             File file = new File("/opt/spark/inbox/model-"+topics);
-            if (file.exists()) Files.delete(Paths.get(file.getAbsolutePath()));
+            if (file.exists()){
+                Files.walkFileTree(file.toPath(), new FileVisitor() {
+
+                    @Override
+                    public FileVisitResult preVisitDirectory(Object dir, BasicFileAttributes attrs) throws IOException {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFile(Object file, BasicFileAttributes attrs) throws IOException {
+                        System.out.println("Deleting file: "+file);
+                        Files.delete((Path)file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(Object file, IOException exc) throws IOException {
+                        System.out.println(exc.toString());
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Object dir, IOException exc) throws IOException {
+                        System.out.println("deleting directory :"+ dir);
+                        Files.delete((Path)dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                });
+            }
+
 
             LOG.info("Saving the model: " + file.getAbsolutePath());
             SparkBuilder sparkBuilder = ctx.getBean(SparkBuilder.class);

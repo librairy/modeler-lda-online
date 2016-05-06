@@ -24,9 +24,12 @@ public class SparkBuilder {
 
     @PostConstruct
     public void setup(){
-        sconf = new SparkConf().
-                setMaster(master).
-                setAppName("librairy.lda.modeler")
+        sconf = new SparkConf()
+                .setAppName("librairy.lda.modeler")
+                .setMaster(master)
+//                .setMaster("spark://adamuz.local:7077")
+//                .setJars(new String[]{"/opt/spark/inbox/modeler-lda-online-0.1.jar"})
+//
         ;
 
         sc = new JavaSparkContext(sconf);

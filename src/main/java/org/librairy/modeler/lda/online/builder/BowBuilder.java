@@ -1,10 +1,12 @@
 package org.librairy.modeler.lda.online.builder;
 
 import com.google.common.base.CharMatcher;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,14 +28,23 @@ public class BowBuilder {
     }
 
     public static Vector from(Map<String,Long> frequencies, Map<String,Long> vocabulary){
-        double[] bag = new double[vocabulary.size()];
+//        double[] bag = new double[vocabulary.size()];
+
+        LinkedList<Integer> index = new LinkedList<>();
+        LinkedList<Double> tf = new LinkedList<>();
+
         for(String word: frequencies.keySet()){
             Long id = vocabulary.get(word);
             if (id == null) continue;// word not in vocabulary
-            bag[id.intValue()]=frequencies.get(word);
+            //bag[id.intValue()]=frequencies.get(word);
+            index.add(id.intValue());
+            tf.add(frequencies.get(word).doubleValue());
         }
 
-        return Vectors.dense(bag);
+        //return Vectors.dense(bag);
+        return Vectors.sparse(vocabulary.size(),
+                ArrayUtils.toPrimitive(index.toArray(new Integer[index.size()])),
+                ArrayUtils.toPrimitive(tf.toArray(new Double[tf.size()])));
     }
 
 

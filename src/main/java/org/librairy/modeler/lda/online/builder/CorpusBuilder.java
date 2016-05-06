@@ -125,7 +125,7 @@ public class CorpusBuilder {
             executor.execute(() -> {
                 String itemUri = null;
                 try {
-                    LOG.info("Getting item from: " + uri);
+//                    LOG.info("Getting item from: " + uri);
                     itemUri = cache.get(uri);
                     Optional<Resource> res = udm.read(Resource.Type.ITEM).byUri(itemUri);
                     if (!res.isPresent()) throw new ExecutionException(new RuntimeException("Item not found"));
@@ -192,7 +192,7 @@ public class CorpusBuilder {
                 mapToPair(x -> new Tuple2<Long, Vector>(x._2, x._1));
 
         Corpus corpus = new Corpus();
-        corpus.setBagsOfWords(bagsOfWords);
+        corpus.setBagsOfWords(bagsOfWords.collectAsMap());
         corpus.setVocabulary(vocabulary.getValue());
         corpus.setDocuments(documents);
         return corpus;
