@@ -27,8 +27,11 @@ public class SparkBuilder {
         sconf = new SparkConf()
                 .setAppName("librairy.lda.modeler")
                 .setMaster(master)
-//                .setMaster("spark://adamuz.local:7077")
+                //.setMaster("spark://adamuz.local:7077")
+//                .setMaster("spark://zavijava.dia.fi.upm.es:3333")
 //                .setJars(new String[]{"/opt/spark/inbox/modeler-lda-online-0.1.jar"})
+//                .set("spark.akka.frameSize","2047")
+//                .set("spark.akka.threads","10")
 //
         ;
 

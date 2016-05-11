@@ -28,7 +28,7 @@ public class CassandraTest {
 
         Corpus corpus = cb.newTrainingCorpus(10000);
 
-        System.out.println("Vocabulary Size: " + corpus.getVocabulary().size());
+        System.out.println("Vocabulary Size: " + corpus.getVocabulary().getWords().size());
 
     }
 }

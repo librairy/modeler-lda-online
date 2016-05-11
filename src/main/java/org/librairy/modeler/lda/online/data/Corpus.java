@@ -17,7 +17,7 @@ public class Corpus implements Serializable {
 
     Map<Long, Vector> bagsOfWords;
 
-    Map<String, Long> vocabulary;
+    Vocabulary vocabulary;
 
     Map<Long, String> documents;
 

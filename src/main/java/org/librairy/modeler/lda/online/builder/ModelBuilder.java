@@ -31,25 +31,14 @@ public class ModelBuilder {
     @Autowired
     private SparkBuilder sparkBuilder;
 
-    public LDAModel newModel(Corpus corpus, Double alpha, Double beta, Integer topics, Integer iterations){
+    public LDAModel train(Corpus corpus, Double alpha, Double beta, Integer topics, Integer iterations, Boolean
+            perplexity){
 
 
 
         LOG.info("building a new onlineLDA model ..");
 
-
-
-
-
-
         Instant start = Instant.now();
-
-
-
-
-
-
-
 
         List<Tuple2<Long,Vector>> documents = corpus.getBagsOfWords()
                 .entrySet()
@@ -116,9 +105,21 @@ public class ModelBuilder {
         LOG.info("## Creating Local LDA Model ..");
         LocalLDAModel localModel = distributedLDAModel.toLocal();
         LOG.info("## Online LDA Model :: Description");
-        LOG.info("Log-Likelihood: "     + distributedLDAModel.logLikelihood());
-//        LOG.info("Log-Perplexity: "     + localModel.logPerplexity(bow));
         LOG.info("Vocabulary Size: "    + localModel.vocabSize());
-        return localModel;
+        LOG.info("Log-Likelihood: "     + distributedLDAModel.logLikelihood());
+        if (perplexity){
+            Instant startPartial = Instant.now();
+            LOG.info("Log-Perplexity: "     + localModel.logPerplexity(bow));
+            Instant endPartial = Instant.now();
+            LOG.info("Perplexity elapsed Time: "       + ChronoUnit.MINUTES.between(startPartial,endPartial) + "min " +
+                    (ChronoUnit.SECONDS
+                    .between(startPartial,endPartial)%60) + "secs");
+        }
+        return ldaModel;
+    }
+
+
+    public void test(){
+
     }
 }

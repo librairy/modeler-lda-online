@@ -16,7 +16,7 @@ public class ApplicationTest {
     @Test
     public void launch(){
 
-        String[] args = new String[]{"2000","100","100"};
+        String[] args = new String[]{"train","1000","100","100"};
 
         Application.main(args);
     }

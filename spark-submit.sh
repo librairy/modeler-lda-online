@@ -7,20 +7,20 @@ scp modeler-lda-online-0.1.jar cbadenes@zavijava.dia.fi.upm.es:/opt/spark/inbox/
 # --class org.librairy.Application \
 # --master spark://zavijava.dia.fi.upm.es:3333 local:/opt/spark/inbox/modeler-lda-online-0.1.jar 1000 100 100
 
-./spark-submit -v \
---class org.librairy.Application \
---conf spark.driver.maxResultSize=0 \
---conf spark.driver.cores=1 \
---conf spark.driver.memory=6G \
---conf spark.executor.memory=10G \
---conf spark.executor.cores=10 \
---conf spark.reducer.maxSizeInFlight=200m \
---conf spark.default.parallelism=10 \
---conf spark.executor.heartbeatInterval=30s \
---conf spark.akka.threads=10 \
---conf spark.akka.frameSize=2047 \
---conf spark.core.connection.auth.wait.timeout=1000 \
---master spark://zavijava.dia.fi.upm.es:3333 local:/opt/spark/inbox/modeler-lda-online-0.1.jar 1000 100 100
+#./spark-submit -v \
+#--class org.librairy.Application \
+#--conf spark.driver.maxResultSize=0 \
+#--conf spark.driver.cores=1 \
+#--conf spark.driver.memory=6G \
+#--conf spark.executor.memory=10G \
+#--conf spark.executor.cores=10 \
+#--conf spark.reducer.maxSizeInFlight=200m \
+#--conf spark.default.parallelism=10 \
+#--conf spark.executor.heartbeatInterval=30s \
+#--conf spark.akka.threads=10 \
+#--conf spark.akka.frameSize=2047 \
+#--conf spark.core.connection.auth.wait.timeout=1000 \
+#--master spark://zavijava.dia.fi.upm.es:3333 local:/opt/spark/inbox/modeler-lda-online-0.1.jar train 1000 100 100
 
 
 # --conf "spark.serializer=org.apache.spark.serializer.KryoSerializer" \

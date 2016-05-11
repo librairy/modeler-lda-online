@@ -14,6 +14,7 @@ import org.librairy.model.domain.resources.Item;
 import org.librairy.model.domain.resources.Resource;
 import org.librairy.modeler.lda.online.data.Corpus;
 import org.librairy.modeler.lda.online.data.UriSet;
+import org.librairy.modeler.lda.online.data.Vocabulary;
 import org.librairy.storage.UDM;
 import org.librairy.storage.executor.ParallelExecutor;
 import org.librairy.storage.system.column.repository.UnifiedColumnRepository;
@@ -25,10 +26,7 @@ import org.springframework.stereotype.Component;
 import scala.Tuple2;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -70,13 +68,12 @@ public class CorpusBuilder {
         LOG.info("Creating initial doc-cache...");
         this.cache = CacheBuilder.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(1, TimeUnit.DAYS)
+                .expireAfterWrite(5, TimeUnit.MINUTES)
                 .build(
                         new CacheLoader<String, String>() {
                             public String load(String uri) {
                                 Iterator<Relation> it = unifiedColumnRepository.findBy(Relation.Type.BUNDLES,
-                                        "document",
-                                        uri).iterator();
+                                        "document", uri).iterator();
                                 if (!it.hasNext()){
                                     List<String> res = udm.find(Resource.Type.ITEM).from(Resource.Type.DOCUMENT, uri);
                                     if (!res.isEmpty()){
@@ -95,11 +92,11 @@ public class CorpusBuilder {
 
         ObjectMapper jsonMapper = new ObjectMapper();
         UriSet trainingSet = new UriSet();
-
-        String line = null;
-        BufferedReader in = new BufferedReader(new InputStreamReader(trainingFile.getInputStream()));
+        String fileName = "/training-set-"+(size/1000)+"k.json";
+        InputStream is = this.getClass().getResourceAsStream(fileName);
+        BufferedReader in = new BufferedReader(new InputStreamReader(is));
         trainingSet = jsonMapper.readValue(in,UriSet.class);
-        List<String> uris = trainingSet.getUris().subList(0, size);
+        List<String> uris = trainingSet.getUris();
         return newCorpus(uris,null);
     }
 
@@ -150,15 +147,14 @@ public class CorpusBuilder {
 
 
         JavaRDD<Tuple2<String, Map<String, Long>>> itemsRDD = sparkBuilder.sc.parallelize(resources);
-//        itemsRDD.cache();
-        itemsRDD.persist(StorageLevel.MEMORY_ONLY()); //MEMORY_ONLY_SER
+        itemsRDD.cache();
+//        itemsRDD.persist(StorageLevel.MEMORY_ONLY()); //MEMORY_ONLY_SER
 
 //        LOG.info("Size of ItemsRDD: " + SizeEstimator.estimate(itemsRDD));
 
         LOG.info("Retrieving the Vocabulary...");
 
-
-        Broadcast<Map<String, Long>> vocabulary = sparkBuilder.sc.broadcast(
+        Broadcast<Map<String, Long>> vocabularyBroadcast = sparkBuilder.sc.broadcast(
                 (refVocabulary != null) ? refVocabulary :
                         itemsRDD.
                                 flatMap(resource -> resource._2.keySet()).
@@ -173,7 +169,7 @@ public class CorpusBuilder {
 //                        zipWithIndex().
 //                        collectAsMap();
 
-        LOG.info( vocabulary.getValue().size() + " words" );
+        LOG.info( vocabularyBroadcast.getValue().size() + " words" );
 
         LOG.info("Indexing the documents...");
         Map<Long, String> documents = itemsRDD.
@@ -187,13 +183,17 @@ public class CorpusBuilder {
         LOG.info("Building the Corpus...");
 
         JavaPairRDD<Long, Vector> bagsOfWords = itemsRDD.
-                map(resource -> BowBuilder.from(resource._2,vocabulary.getValue())).
+                map(resource -> BowBuilder.from(resource._2,vocabularyBroadcast.getValue())).
                 zipWithIndex().
                 mapToPair(x -> new Tuple2<Long, Vector>(x._2, x._1));
 
+
+        Vocabulary vocabulary = new Vocabulary();
+        vocabulary.setWords(vocabularyBroadcast.getValue());
+
         Corpus corpus = new Corpus();
         corpus.setBagsOfWords(bagsOfWords.collectAsMap());
-        corpus.setVocabulary(vocabulary.getValue());
+        corpus.setVocabulary(vocabulary);
         corpus.setDocuments(documents);
         return corpus;
 
