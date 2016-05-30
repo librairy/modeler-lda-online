@@ -203,6 +203,21 @@
       <id>librairy-mvn-repo</id>
       <url>https://raw.github.com/librairy/boot/mvn-repo/</url>
     </repository>
+    <repository>
+      <snapshots>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+      <id>mvn-repository</id>
+      <url>http://mvnrepository.com/artifact</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots />
+      <id>sonatype-snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -284,6 +299,14 @@
           <groupId>com.ning</groupId>
         </exclusion>
         <exclusion>
+          <artifactId>snappy-java</artifactId>
+          <groupId>org.xerial.snappy</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>lz4</artifactId>
+          <groupId>net.jpountz.lz4</groupId>
+        </exclusion>
+        <exclusion>
           <artifactId>RoaringBitmap</artifactId>
           <groupId>org.roaringbitmap</groupId>
         </exclusion>
@@ -298,10 +321,6 @@
         <exclusion>
           <artifactId>akka-slf4j_2.10</artifactId>
           <groupId>com.typesafe.akka</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
         </exclusion>
         <exclusion>
           <artifactId>json4s-jackson_2.10</artifactId>
@@ -320,12 +339,12 @@
           <groupId>org.apache.mesos</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>stream</artifactId>
-          <groupId>com.clearspring.analytics</groupId>
+          <artifactId>netty-all</artifactId>
+          <groupId>io.netty</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>metrics-core</artifactId>
-          <groupId>io.dropwizard.metrics</groupId>
+          <artifactId>stream</artifactId>
+          <groupId>com.clearspring.analytics</groupId>
         </exclusion>
         <exclusion>
           <artifactId>metrics-jvm</artifactId>
@@ -404,6 +423,13 @@
           <groupId>org.spark-project.spark</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.github.fommil.netlib</groupId>
+      <artifactId>all</artifactId>
+      <version>1.1.2</version>
+      <type>pom</type>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

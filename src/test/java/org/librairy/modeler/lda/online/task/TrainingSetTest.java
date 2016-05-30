@@ -1,4 +1,4 @@
-package org.librairy.modeler.lda.online;
+package org.librairy.modeler.lda.online.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.cbadenes.lab.test.IntegrationTest;
@@ -6,12 +6,12 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.librairy.Application;
-import org.librairy.model.domain.relations.Relation;
-import org.librairy.model.domain.resources.Resource;
+//import org.librairy.model.domain.relations.Relation;
+//import org.librairy.model.domain.resources.Resource;
 import org.librairy.modeler.lda.online.builder.CitesBuilder;
 import org.librairy.modeler.lda.online.data.UriSet;
-import org.librairy.storage.UDM;
-import org.librairy.storage.system.column.repository.UnifiedColumnRepository;
+//import org.librairy.storage.UDM;
+//import org.librairy.storage.system.column.repository.UnifiedColumnRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +22,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * Created on 29/04/16:
@@ -51,11 +49,11 @@ public class TrainingSetTest {
     @Autowired
     CitesBuilder citesBuilder;
 
-    @Autowired
-    UnifiedColumnRepository columnRepository;
-
-    @Autowired
-    UDM udm;
+//    @Autowired
+//    UnifiedColumnRepository columnRepository;
+//
+//    @Autowired
+//    UDM udm;
 
 
     @Test
@@ -63,12 +61,12 @@ public class TrainingSetTest {
 
 
 
-        Iterable<Relation> iterable = columnRepository.findBy(Relation.Type.CONTAINS, "domain", "http://librairy.org/domains/f69d397b7bd675645769ec0a561b8d8b");
-        List<String> documentUris = StreamSupport.
-                stream(iterable.spliterator(), false).
-                parallel().
-                map(relation -> relation.getEndUri()).
-                collect(Collectors.toList());
+//        Iterable<Relation> iterable = columnRepository.findBy(Relation.Type.CONTAINS, "domain", "http://librairy.org/domains/f69d397b7bd675645769ec0a561b8d8b");
+//        List<String> documentUris = StreamSupport.
+//                stream(iterable.spliterator(), false).
+//                parallel().
+//                map(relation -> relation.getEndUri()).
+//                collect(Collectors.toList());
 
 //        List<String> documentUris = udm.find(Resource.Type.DOCUMENT).from(Resource.Type.DOMAIN, "http://librairy" +
 //                ".org/domains/default");
@@ -80,12 +78,12 @@ public class TrainingSetTest {
 //                        (10000)
 //                .collect(Collectors.toList()));
 
-        createFile(documentUris,800000);
-        createFile(documentUris,500000);
-        createFile(documentUris,100000);
-        createFile(documentUris,50000);
-        createFile(documentUris,10000);
-        createFile(documentUris,1000);
+//        createFile(documentUris,800000);
+//        createFile(documentUris,500000);
+//        createFile(documentUris,100000);
+//        createFile(documentUris,50000);
+//        createFile(documentUris,10000);
+//        createFile(documentUris,1000);
 
     }
 

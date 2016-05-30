@@ -1,4 +1,4 @@
-package org.librairy.modeler.lda.online;
+package org.librairy.modeler.lda.online.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.librairy.modeler.lda.online.builder.CitesBuilder;

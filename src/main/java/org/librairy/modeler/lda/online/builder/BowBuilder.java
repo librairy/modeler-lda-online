@@ -4,6 +4,10 @@ import com.google.common.base.CharMatcher;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
+import org.librairy.modeler.lda.online.data.BOW;
+import org.librairy.modeler.lda.online.data.Vocabulary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -18,40 +22,20 @@ import java.util.stream.Collectors;
  */
 public class BowBuilder {
 
+    private static final Logger LOG = LoggerFactory.getLogger(BowBuilder.class);
+
     private static final List<String> STOPWORDS = Arrays.asList(new String[]{
-            "fig.","sample","figs."
+            "fig.",
+            "sample",
+            "figs."
     });
 
-
-    public static Vector from(List<String> tokens, Map<String,Long> vocabulary){
-        return from(count(tokens),vocabulary);
-    }
-
-    public static Vector from(Map<String,Long> frequencies, Map<String,Long> vocabulary){
-//        double[] bag = new double[vocabulary.size()];
-
-        LinkedList<Integer> index = new LinkedList<>();
-        LinkedList<Double> tf = new LinkedList<>();
-
-        for(String word: frequencies.keySet()){
-            Long id = vocabulary.get(word);
-            if (id == null) continue;// word not in vocabulary
-            //bag[id.intValue()]=frequencies.get(word);
-            index.add(id.intValue());
-            tf.add(frequencies.get(word).doubleValue());
-        }
-
-        //return Vectors.dense(bag);
-        return Vectors.sparse(vocabulary.size(),
-                ArrayUtils.toPrimitive(index.toArray(new Integer[index.size()])),
-                ArrayUtils.toPrimitive(tf.toArray(new Double[tf.size()])));
-    }
-
-
-    public static Map<String,Long> count(List<String> tokens){
-        return tokens.stream().
+    public static BOW from(List<String> tokens){
+        BOW bow = new BOW();
+        bow.setFrequencies(tokens.stream().
                 filter(token -> isValid(token))
-                .collect(Collectors.groupingBy(token -> token, Collectors.counting()));
+                .collect(Collectors.groupingBy(token -> token, Collectors.counting())));
+        return bow;
     }
 
     private static boolean isValid(String token){

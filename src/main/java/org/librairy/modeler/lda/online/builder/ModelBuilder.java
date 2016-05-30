@@ -1,12 +1,10 @@
 package org.librairy.modeler.lda.online.builder;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.clustering.*;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.storage.StorageLevel;
 import org.librairy.modeler.lda.online.data.Corpus;
-import org.librairy.storage.UDM;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,23 +38,15 @@ public class ModelBuilder {
 
         Instant start = Instant.now();
 
-        List<Tuple2<Long,Vector>> documents = corpus.getBagsOfWords()
-                .entrySet()
-                .parallelStream()
-                .map(entry -> new Tuple2<>(entry.getKey(),entry.getValue()))
-                .collect(Collectors.toList());
-
-        JavaPairRDD<Long, Vector> bow = sparkBuilder.sc.parallelizePairs(documents);
-        bow.cache();
+        JavaPairRDD<Long, Vector> bow = corpus.getBagsOfWords();
 
 //        JavaPairRDD<Long, Vector> bow = pairs.persist(StorageLevel.MEMORY_ONLY());
-
-        Long startModel = System.currentTimeMillis();
 
         LOG.info
                 ("====================================================================================================");
         LOG.info(" TRAINING-STAGE: alpha=" + alpha + ", beta=" + beta + ", numTopics=" + topics + ", " +
-                "numIterations="+iterations+", corpusSize="  + corpus.getDocuments().size());
+                "numIterations="+iterations+", corpusSize="  + corpus.getSize() +", vocabulary=" + corpus.getVocabularySize()
+                + "words");
         LOG.info
                 ("====================================================================================================");
 
@@ -93,20 +83,22 @@ public class ModelBuilder {
 
         LDAModel ldaModel = new LDA()
                 .setK(topics)
+                 .setOptimizer(new OnlineLDAOptimizer())
                 .run(bow);
 
         LOG.info("## Created Distributed LDA Model successfully!!!!");
-        DistributedLDAModel distributedLDAModel = (DistributedLDAModel) ldaModel;
+//        DistributedLDAModel distributedLDAModel = (DistributedLDAModel) ldaModel;
 
         Instant end = Instant.now();
         LOG.info("Elapsed Time: "       + ChronoUnit.MINUTES.between(start,end) + "min " + (ChronoUnit.SECONDS
                 .between(start,end)%60) + "secs");
 
         LOG.info("## Creating Local LDA Model ..");
-        LocalLDAModel localModel = distributedLDAModel.toLocal();
+//        LocalLDAModel localModel = distributedLDAModel.toLocal();
+        LocalLDAModel localModel = (LocalLDAModel) ldaModel;
         LOG.info("## Online LDA Model :: Description");
         LOG.info("Vocabulary Size: "    + localModel.vocabSize());
-        LOG.info("Log-Likelihood: "     + distributedLDAModel.logLikelihood());
+//        LOG.info("Log-Likelihood: "     + distributedLDAModel.logLikelihood());
         if (perplexity){
             Instant startPartial = Instant.now();
             LOG.info("Log-Perplexity: "     + localModel.logPerplexity(bow));

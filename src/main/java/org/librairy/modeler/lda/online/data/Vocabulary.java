@@ -1,7 +1,10 @@
 package org.librairy.modeler.lda.online.data;
 
 import lombok.Data;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.broadcast.Broadcast;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -10,12 +13,15 @@ import java.util.Map;
  * @author cbadenes
  */
 @Data
-public class Vocabulary {
+public class Vocabulary implements Serializable {
 
-    Map<String, Long> words;
+    Map<String,Long> words;
 
-    public Long getWordId(String word){
-        return words.get(word.toLowerCase());
+    int size;
+
+    public void setWords(Map<String,Long> words){
+        this.words = words;
+        this.size = words.size();
     }
 
 }

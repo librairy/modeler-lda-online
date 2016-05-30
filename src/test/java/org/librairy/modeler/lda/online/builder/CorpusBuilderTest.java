@@ -20,20 +20,15 @@ public class CorpusBuilderTest {
 
 
     @Test
-    public void large(){
+    public void large() throws IOException {
 
 
-        try {
-            ApplicationContext ctx = SpringApplication.run(Application.class, new String[]{});
+        ApplicationContext ctx = SpringApplication.run(Application.class, new String[]{});
 
-            CorpusBuilder corpusBuilder = ctx.getBean(CorpusBuilder.class);
-            Corpus corpus = corpusBuilder.newTrainingCorpus(500000);
+        CorpusBuilder corpusBuilder = ctx.getBean(CorpusBuilder.class);
+        Corpus corpus = corpusBuilder.newTrainingCorpus(500000);
 
-            System.out.println("Vocabulary: " + corpus.getVocabulary().getWords().size());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println("Vocabulary: " + corpus.getSize());
 
 
     }

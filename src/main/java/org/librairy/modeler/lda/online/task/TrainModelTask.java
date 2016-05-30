@@ -24,7 +24,7 @@ public class TrainModelTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(TrainModelTask.class);
 
-    private static final String BASE_DIRECTORY = "/opt/spark/inbox";
+    public static final String BASE_DIRECTORY = "/opt/spark/model";
 
     private final CorpusBuilder corpusBuilder;
     private final ModelBuilder modelBuilder;
@@ -83,15 +83,9 @@ public class TrainModelTask {
 
         LDAModel model = modelBuilder.train(corpus,alpha,beta,topics,iterations,perplexity);
 
-        File file = FileBuilder.newFile(BASE_DIRECTORY +"/model-"+size+"-"+topics,true);
+        File file = FileBuilder.newFile(BASE_DIRECTORY +"/model-"+size+"-"+topics+"-"+iterations,true);
         LOG.info("Saving the model: " + file.getAbsolutePath());
         model.save(sparkBuilder.sc.sc(),"file://"+file.getAbsolutePath());
-
-        LOG.info("Saving the vocabulary: ");
-        ObjectMapper jsonMapper = new ObjectMapper();
-        File vocabFile = FileBuilder.newFile(BASE_DIRECTORY +"/vocab-"+size+".json",true);
-        Vocabulary vocabulary = corpus.getVocabulary();
-        jsonMapper.writeValue(vocabFile,vocabulary);
 
     }
 }

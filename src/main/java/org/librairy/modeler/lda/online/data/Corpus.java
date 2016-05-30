@@ -15,10 +15,12 @@ import java.util.Map;
 @Data
 public class Corpus implements Serializable {
 
-    Map<Long, Vector> bagsOfWords;
+    JavaPairRDD<Long, Vector> bagsOfWords;
 
-    Vocabulary vocabulary;
+//    Vocabulary vocabulary;
 
-    Map<Long, String> documents;
+    long size;
+
+    long vocabularySize;
 
 }

@@ -1,5 +1,8 @@
 package org.librairy.modeler.lda.online.builder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -15,6 +18,8 @@ import java.nio.file.attribute.BasicFileAttributes;
  */
 public class FileBuilder {
 
+    private static final Logger LOG = LoggerFactory.getLogger(FileBuilder.class);
+
     public static File newFile(String path, Boolean override) throws IOException {
         File file = new File(path);
         if (file.exists()){
@@ -27,20 +32,20 @@ public class FileBuilder {
 
                 @Override
                 public FileVisitResult visitFile(Object file, BasicFileAttributes attrs) throws IOException {
-                    System.out.println("Deleting file: "+file);
+                    LOG.debug("Deleting file: "+file);
                     Files.delete((Path)file);
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFileFailed(Object file, IOException exc) throws IOException {
-                    System.out.println(exc.toString());
+                    LOG.debug(exc.toString());
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult postVisitDirectory(Object dir, IOException exc) throws IOException {
-                    System.out.println("deleting directory :"+ dir);
+                    LOG.debug("deleting directory :"+ dir);
                     Files.delete((Path)dir);
                     return FileVisitResult.CONTINUE;
                 }

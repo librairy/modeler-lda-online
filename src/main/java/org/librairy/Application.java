@@ -10,6 +10,7 @@ import org.librairy.modeler.lda.online.builder.ModelBuilder;
 import org.librairy.modeler.lda.online.builder.SparkBuilder;
 import org.librairy.modeler.lda.online.data.Corpus;
 import org.librairy.modeler.lda.online.data.Vocabulary;
+import org.librairy.modeler.lda.online.task.PrepareModelTask;
 import org.librairy.modeler.lda.online.task.TestModelTask;
 import org.librairy.modeler.lda.online.task.TrainModelTask;
 import org.slf4j.Logger;
@@ -47,8 +48,8 @@ import java.time.temporal.ChronoUnit;
 @EnableAutoConfiguration(exclude = {JndiConnectionFactoryAutoConfiguration.class,DataSourceAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class,JpaRepositoriesAutoConfiguration.class,DataSourceTransactionManagerAutoConfiguration.class})
 @ComponentScan({"org.librairy"})
-@PropertySource({"classpath:application.properties","classpath:boot.properties"})
-//@EnableConfigurationProperties
+//@PropertySource({"classpath:application.properties","classpath:boot.properties"})
+@PropertySource({"classpath:application.properties"})
 public class Application {
 
 
@@ -85,6 +86,7 @@ public class Application {
             String task = args[0];
             if (task.equalsIgnoreCase("train")) new TrainModelTask(ctx).run(args);
             else if (task.equalsIgnoreCase("test")) new TestModelTask(ctx).run(args);
+            else if (task.equalsIgnoreCase("prepare")) new PrepareModelTask(ctx).run(args);
             else throw new RuntimeException
                         ("Task not handled: " + task + ". Only accepted 'train' or 'test'");
 

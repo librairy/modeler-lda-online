@@ -3,14 +3,16 @@ package org.librairy.modeler.lda.online.data;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
- * Created on 29/04/16:
+ * Created on 13/05/16:
  *
  * @author cbadenes
  */
 @Data
-public class UriSet implements Serializable {
-    List<String> uris;
+public class TextUnit implements Serializable{
+
+    private String uri;
+
+    private String tokens;
 }

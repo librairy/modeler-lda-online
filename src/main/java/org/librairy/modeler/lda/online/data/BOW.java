@@ -3,14 +3,15 @@ package org.librairy.modeler.lda.online.data;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Map;
 
 /**
- * Created on 29/04/16:
+ * Created on 17/05/16:
  *
  * @author cbadenes
  */
 @Data
-public class UriSet implements Serializable {
-    List<String> uris;
+public class BOW implements Serializable{
+
+    Map<String,Long> frequencies;
 }
