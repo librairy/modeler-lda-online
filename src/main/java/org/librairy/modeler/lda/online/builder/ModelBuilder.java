@@ -248,19 +248,20 @@ public class ModelBuilder {
                 .map(row -> (Vector) row.get(0))
                 .zipWithIndex()
                 .mapToPair(r -> r.swap())
-//                .cache();
-                .repartition(50000);
+                .cache()
+                .repartition(30);
+        ;
 
-        countVectors
-                .persist(StorageLevel.MEMORY_AND_DISK());
+//        countVectors
+//                .persist(StorageLevel.MEMORY_AND_DISK());
 
 
         LOG.info("Configuring LDA ..");
-//        double mbf = 2.0 / iterations + 1.0 / size;
+        double mbf = 2.0 / iterations + 1.0 / size;
 
         LDA lda = new LDA()
-                //.setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(Math.min(1.0,mbf)))
-                .setOptimizer(new OnlineLDAOptimizer())
+                .setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(0.8))
+//                .setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(0.05 + 1.0 / size))
                 .setK(topics)
                 //.setMaxIterations(2)
                 .setMaxIterations(iterations)

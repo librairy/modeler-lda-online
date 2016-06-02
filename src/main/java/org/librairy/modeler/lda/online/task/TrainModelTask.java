@@ -92,8 +92,8 @@ public class TrainModelTask {
             LDAModel model = modelBuilder.train(size,vocabSize,alpha,beta,topics,iterations,perplexity);
 
             String name = "/model-"+size+"-"+topics+"-"+iterations;
-            LOG.info("Saving the model: " + name);
-            model.save(sparkBuilder.sc.sc(),"hdfs://zavijava.dia.fi.upm.es/tmp/models/"+name);
+//            LOG.info("Saving the model: " + name);
+//            model.save(sparkBuilder.sc.sc(),"hdfs://zavijava.dia.fi.upm.es/tmp/models/"+name);
         }catch (Exception e){
             if (e instanceof FileAlreadyExistsException) {
                 LOG.warn(e.getMessage());
