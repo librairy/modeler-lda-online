@@ -32,17 +32,22 @@ public class SparkBuilder {
 //                .setJars(new String[]{"/opt/spark/inbox/modeler-lda-online-0.1.jar"})
                 .set("spark.cassandra.connection.host", "wiig.dia.fi.upm.es")
                 .set("spark.cassandra.connection.port", "5011")
+                .set("spark.task.maxFailures","1")
                 .set("spark.cassandra.input.split.size_in_mb","1280")
-//                .set("spark.eventLog.dir", "file:///opt/spark/inbox/logs")
-//                .set("spark.eventLog.enabled", "true")
-//                .set("spark.driver.maxResultSize","0")
+                .set("spark.driver.maxResultSize","0")
+                .set("spark.akka.frameSize","2047")
+                .set("spark.executor.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
+                .set("spark.executor.heartbeatInterval","10s")
+                .set("spark.reducer.maxSizeInFlight","200m")
+                .set("spark.eventLog.enabled", "true")
+                .set("spark.eventLog.dir", "hdfs://zavijava.dia.fi.upm.es/tmp/logs")
+                .set("spark.default.parallelism","32")
+//                .set("spark.cassandra.input.fetch.size_in_rows","50000")
+//                .set("spark.cassandra.input.metrics","false")
 //                .setMaster("spark://zavijava.dia.fi.upm.es:3333")
-//                .set("spark.akka.frameSize","2047")
 //                .set("spark.akka.threads","10")
 //                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 //                .set("spark.kryoserializer.buffer.max","2024m")
-//                .set("spark.executor.extraJavaOptions", "-XX:+UseG1GC")
-//                .set("spark.executor.heartbeatInterval","10s")
 //                .set("spark.kryo.registrationRequired", "true")
 //                .registerKryoClasses(new Class[]{
 //                        java.util.HashMap.class,
@@ -64,5 +69,6 @@ public class SparkBuilder {
         ;
 
         sc = new JavaSparkContext(sconf);
+        sc.setCheckpointDir("hdfs://zavijava.dia.fi.upm.es/tmp/checkpoints");
     }
 }

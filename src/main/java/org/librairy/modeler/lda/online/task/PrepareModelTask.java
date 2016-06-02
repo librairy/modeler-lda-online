@@ -13,6 +13,7 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.cassandra.CassandraSQLContext;
 import org.apache.spark.storage.StorageLevel;
 import org.librairy.modeler.lda.online.builder.CorpusBuilder;
@@ -82,65 +83,74 @@ public class PrepareModelTask {
 
         res.show();
 
-        // Create Bag-of-Words
-        List<Row> rows = res.select("uri").limit(size).collectAsList();
-        rows.parallelStream().forEach(row -> {
+        res.write()
+                .format("com.databricks.spark.csv")
+                .option("header", "true")
+                .save("hdfs://zavijava.dia.fi.upm.es/patents/tic/corpus.csv");
 
-            String uri      = row.getString(row.fieldIndex("uri"));
-            String name     = StringUtils.substringAfterLast(uri,"/");
-            File bowFile    = new File(BOW_FOLDER+name+".json");
+//        res.save("hdfs://zavijava.dia.fi.upm.es/patents/tic/corpus.csv", SaveMode.Overwrite);
 
 
-            if (!bowFile.exists()){
-                BOW bow = new BOW();
-                Map<String, Long> freq = res.select("uri","tokens").where("uri = '"+uri+"'")
-                        .toJavaRDD()
-                        .flatMap(r -> Arrays.asList(r.getString(r.fieldIndex("tokens")).split(" ")))
-                        .mapToPair(word -> new Tuple2<String, Long>(word, 1l))
-                        .reduceByKey((x, y) -> x + y)
-                        .collectAsMap();
-                bow.setFrequencies(freq);
 
-                try {
-                    jsonMapper.writeValue(bowFile,bow);
-                    LOG.info("BOW created for: " + uri + " at:" + bowFile.getAbsolutePath());
-                } catch (IOException e) {
-                    LOG.error("Error writing json: " + bowFile.getAbsolutePath(), e);
-                }
-            }else{
-                LOG.debug("BOW already exists for: " + uri);
-            }
-        });
-
-        // Create Vocabulary
-        Vocabulary vocabulary = new Vocabulary();
-
-        JavaPairRDD<String,Long> vocabularyRDD;
-        File vocabFile  = new File(VOCAB_FOLDER +"vocab-"+size+".json");
-        if (!vocabFile.exists()){
-            LOG.info("Creating vocabulary for " + size + " documents");
-            vocabularyRDD = res.select("tokens").limit(size)
-                    .toJavaRDD()
-                    .flatMap(row -> Arrays.asList(row.getString(row.fieldIndex("tokens")).split(" ")))
-                    .distinct()
-                    .zipWithIndex();
-
-            vocabulary.setWords(vocabularyRDD.collectAsMap());
-
-            jsonMapper.writeValue(vocabFile,vocabulary);
-            LOG.info("Vocabulary created at: " + vocabFile.getAbsolutePath());
-
-        }else{
-            LOG.info("Vocabulary already exists at: " + vocabFile.getAbsolutePath());
-            vocabulary = jsonMapper.readValue(vocabFile,Vocabulary.class);
-
-            LOG.info("Getting list of words as RDD: " + vocabFile.getAbsolutePath());
-            List<Tuple2<String, Long>> entryList = vocabulary.getWords().entrySet().parallelStream()
-                    .map(e -> new Tuple2<String, Long>(e.getKey(), e.getValue()))
-                    .collect(Collectors.toList());
-            vocabularyRDD = sparkBuilder.sc.parallelizePairs(entryList);
-        }
-        LOG.info("Vocabulary composed by " + vocabulary.getWords().size() + " words");
+//        // Create Bag-of-Words
+//        List<Row> rows = res.select("uri").limit(size).collectAsList();
+//        rows.parallelStream().forEach(row -> {
+//
+//            String uri      = row.getString(row.fieldIndex("uri"));
+//            String name     = StringUtils.substringAfterLast(uri,"/");
+//            File bowFile    = new File(BOW_FOLDER+name+".json");
+//
+//
+//            if (!bowFile.exists()){
+//                BOW bow = new BOW();
+//                Map<String, Long> freq = res.select("uri","tokens").where("uri = '"+uri+"'")
+//                        .toJavaRDD()
+//                        .flatMap(r -> Arrays.asList(r.getString(r.fieldIndex("tokens")).split(" ")))
+//                        .mapToPair(word -> new Tuple2<String, Long>(word, 1l))
+//                        .reduceByKey((x, y) -> x + y)
+//                        .collectAsMap();
+//                bow.setFrequencies(freq);
+//
+//                try {
+//                    jsonMapper.writeValue(bowFile,bow);
+//                    LOG.info("BOW created for: " + uri + " at:" + bowFile.getAbsolutePath());
+//                } catch (IOException e) {
+//                    LOG.error("Error writing json: " + bowFile.getAbsolutePath(), e);
+//                }
+//            }else{
+//                LOG.debug("BOW already exists for: " + uri);
+//            }
+//        });
+//
+//        // Create Vocabulary
+//        Vocabulary vocabulary = new Vocabulary();
+//
+//        JavaPairRDD<String,Long> vocabularyRDD;
+//        File vocabFile  = new File(VOCAB_FOLDER +"vocab-"+size+".json");
+//        if (!vocabFile.exists()){
+//            LOG.info("Creating vocabulary for " + size + " documents");
+//            vocabularyRDD = res.select("tokens").limit(size)
+//                    .toJavaRDD()
+//                    .flatMap(row -> Arrays.asList(row.getString(row.fieldIndex("tokens")).split(" ")))
+//                    .distinct()
+//                    .zipWithIndex();
+//
+//            vocabulary.setWords(vocabularyRDD.collectAsMap());
+//
+//            jsonMapper.writeValue(vocabFile,vocabulary);
+//            LOG.info("Vocabulary created at: " + vocabFile.getAbsolutePath());
+//
+//        }else{
+//            LOG.info("Vocabulary already exists at: " + vocabFile.getAbsolutePath());
+//            vocabulary = jsonMapper.readValue(vocabFile,Vocabulary.class);
+//
+//            LOG.info("Getting list of words as RDD: " + vocabFile.getAbsolutePath());
+//            List<Tuple2<String, Long>> entryList = vocabulary.getWords().entrySet().parallelStream()
+//                    .map(e -> new Tuple2<String, Long>(e.getKey(), e.getValue()))
+//                    .collect(Collectors.toList());
+//            vocabularyRDD = sparkBuilder.sc.parallelizePairs(entryList);
+//        }
+//        LOG.info("Vocabulary composed by " + vocabulary.getWords().size() + " words");
 
 //        // Create Vector of frequencies
 //        final Integer vocabularySize = vocabulary.getWords().size();

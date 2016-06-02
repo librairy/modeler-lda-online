@@ -1,8 +1,27 @@
 package org.librairy.modeler.lda.online.builder;
 
+import lombok.val;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.ml.Pipeline;
+import org.apache.spark.ml.PipelineModel;
+import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.feature.CountVectorizer;
+import org.apache.spark.ml.feature.CountVectorizerModel;
+import org.apache.spark.ml.feature.StopWordsRemover;
+import org.apache.spark.ml.feature.Tokenizer;
 import org.apache.spark.mllib.clustering.*;
 import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.cassandra.CassandraSQLContext;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.apache.spark.storage.StorageLevel;
 import org.librairy.modeler.lda.online.data.Corpus;
 import org.slf4j.Logger;
@@ -13,8 +32,8 @@ import scala.Tuple2;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created on 28/04/16:
@@ -81,10 +100,32 @@ public class ModelBuilder {
 //
 //        LocalLDAModel ldaModelWrapper = (LocalLDAModel) ldaModel;
 
-        LDAModel ldaModel = new LDA()
+
+        // Setting Checkpoint
+
+//        lda.setOptimizer(optimizer)
+//                .setK(params.k)
+//                .setMaxIterations(params.maxIterations)
+//                .setDocConcentration(params.docConcentration)
+//                .setTopicConcentration(params.topicConcentration)
+//                .setCheckpointInterval(params.checkpointInterval)
+//        if (params.checkpointDir.nonEmpty) {
+//            sc.setCheckpointDir(params.checkpointDir.get)
+//        }
+
+        //optimizer = new OnlineLDAOptimizer().setMiniBatchFraction(0.05 + 1.0 / actualCorpusSize)
+
+
+        LDA lda = new LDA()
+                .setOptimizer(new OnlineLDAOptimizer())
                 .setK(topics)
-                 .setOptimizer(new OnlineLDAOptimizer())
-                .run(bow);
+                .setMaxIterations(iterations)
+                .setDocConcentration(alpha)
+                .setTopicConcentration(beta)
+                .setCheckpointInterval(10)
+                ;
+
+        LDAModel ldaModel = lda.run(bow);
 
         LOG.info("## Created Distributed LDA Model successfully!!!!");
 //        DistributedLDAModel distributedLDAModel = (DistributedLDAModel) ldaModel;
@@ -111,7 +152,163 @@ public class ModelBuilder {
     }
 
 
-    public void test(){
+    public LDAModel train(Integer size, Integer vocabSize, Double alpha, Double beta, Integer topics, Integer
+            iterations, Boolean
+            perplexity){
+
+        LOG.info("building a new LDA model ..");
+
+        Instant start = Instant.now();
+
+        LOG.info
+                ("====================================================================================================");
+        LOG.info(" TRAINING-STAGE: alpha=" + alpha + ", beta=" + beta + ", numTopics=" + topics + ", " +
+                "numIterations="+iterations+", corpusSize="  + size +", vocabulary=" + vocabSize);
+        LOG.info
+                ("====================================================================================================");
+
+        /**********************************************************************
+         * Simulated DataFrame
+         **********************************************************************/
+//        JavaRDD<Row> jrdd = sparkBuilder.sc.parallelize(Arrays.asList(
+//                RowFactory.create(0, "Hi I heard about Spark"),
+//                RowFactory.create(1, "I wish Java could use case classes"),
+//                RowFactory.create(2, "Logistic,regression,models,are,neat")
+//        ));
+//
+//        StructType schema = new StructType(new StructField[]{
+//                new StructField("uri", DataTypes.IntegerType, false, Metadata.empty()),
+//                new StructField("tokens", DataTypes.StringType, false, Metadata.empty())
+//        });
+//
+//        SQLContext sqlContext = new SQLContext(sparkBuilder.sc);
+//
+//        DataFrame df = sqlContext.createDataFrame(jrdd, schema);
+
+
+        /**********************************************************************
+         * Cassandra DataFrame
+         **********************************************************************/
+//        CassandraSQLContext cc = new CassandraSQLContext(sparkBuilder.sc.sc());
+//
+//        String sql = "select uri,tokens from research.items";
+//
+//        LOG.info("Getting texts from Cassandra by '" + sql + "'");
+//        DataFrame patentsDF = cc.cassandraSql(sql);
+
+        /**********************************************************************
+         * CSV DataFrame
+         **********************************************************************/
+        SQLContext sqlContext = new SQLContext(sparkBuilder.sc);
+        DataFrame patentsDF = sqlContext.read()
+                .format("com.databricks.spark.csv")
+                .option("header", "true") // Use first line of all files as header
+                .option("inferSchema", "true") // Automatically infer data types
+                .load("hdfs://zavijava.dia.fi.upm.es/patents/tic/corpus.csv");
+
+
+        /**********************************************************************
+         * Topic Modeling
+         **********************************************************************/
+
+        DataFrame df = patentsDF.limit(size);
+
+        LOG.info("Splitting each document into words ..");
+        DataFrame words = new Tokenizer()
+                .setInputCol("tokens")
+                .setOutputCol("words")
+                .transform(df);
+
+        LOG.info("Filter out stopwords");
+        String[] stopwords = new String[]{"fig."};
+        DataFrame filteredWords = new StopWordsRemover()
+                .setStopWords(stopwords)
+                .setCaseSensitive(false)
+                .setInputCol("words")
+                .setOutputCol("filtered")
+                .transform(words);
+
+        LOG.info("Limiting to top `vocabSize` most common words and convert to word count vector features ..");
+        CountVectorizerModel cvModel = new CountVectorizer()
+                .setVocabSize(vocabSize)
+                .setInputCol("filtered")
+                .setOutputCol("features")
+                .fit(filteredWords);
+
+
+        // Spark-MLLIB Features:
+//        Pipeline pipeline = new Pipeline().setStages(new PipelineStage[]{tokenizer,filterer,cVectorizer});
+//        PipelineModel model = pipeline.fit(df);
+
+
+        LOG.info("Building a corpus by using bag-of-words ..");
+        JavaPairRDD<Long, Vector> countVectors = cvModel.transform(filteredWords)
+                .select("features")
+                .toJavaRDD()
+                .map(row -> (Vector) row.get(0))
+                .zipWithIndex()
+                .mapToPair(r -> r.swap())
+//                .cache();
+                .repartition(50000);
+
+        countVectors
+                .persist(StorageLevel.MEMORY_AND_DISK());
+
+
+        LOG.info("Configuring LDA ..");
+//        double mbf = 2.0 / iterations + 1.0 / size;
+
+        LDA lda = new LDA()
+                //.setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(Math.min(1.0,mbf)))
+                .setOptimizer(new OnlineLDAOptimizer())
+                .setK(topics)
+                //.setMaxIterations(2)
+                .setMaxIterations(iterations)
+                .setDocConcentration(alpha)
+                .setTopicConcentration(beta)
+                .setCheckpointInterval(2)
+                ;
+
+        LOG.info("Running LDA on corpus ..");
+        Instant startModel = Instant.now();
+        LDAModel ldaModel = lda.run(countVectors);
+        Instant endModel = Instant.now();
+
+        Instant end = Instant.now();
+        LocalLDAModel localModel = (LocalLDAModel) ldaModel;
+        LOG.info("## Created LDA Model successfully!!!!");
+        LOG.info("#####################################################################################");
+        LOG.info("Model Elapsed Time: "       + ChronoUnit.MINUTES.between(startModel,endModel) + "min " + (ChronoUnit
+                .SECONDS
+                .between(startModel,endModel)%60) + "secs");
+        LOG.info("Total Elapsed Time: "       + ChronoUnit.MINUTES.between(start,end) + "min " + (ChronoUnit.SECONDS
+                .between(start,end)%60) + "secs");
+        LOG.info("Vocabulary Size: "    + localModel.vocabSize());
+        LOG.info("Corpus Size: "    + size);
+        LOG.info("Num Iterations: "    + iterations);
+        LOG.info("Num Topics: "    + topics);
+        LOG.info("Alpha: "    + alpha);
+        LOG.info("Beta: "    + beta);
+        LOG.info("#####################################################################################");
+
+        Tuple2<int[], double[]>[] topicIndices = ldaModel.describeTopics(10);
+        String[] vocabArray = cvModel.vocabulary();
+
+        int index = 0;
+        for (Tuple2<int[], double[]> topic : topicIndices){
+            LOG.info("Topic-" + index++);
+            int[] topicWords = topic._1;
+            double[] weights = topic._2;
+
+            for (int i=0; i< topicWords.length;i++){
+                int wid = topicWords[i];
+                LOG.info("\t"+vocabArray[wid] +"\t:" + weights[i]);
+            }
+            LOG.info("------------------------------------------");
+        }
+
+        return ldaModel;
+
 
     }
 }

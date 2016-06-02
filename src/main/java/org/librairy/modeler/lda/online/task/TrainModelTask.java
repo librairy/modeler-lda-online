@@ -1,6 +1,7 @@
 package org.librairy.modeler.lda.online.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.hadoop.mapred.FileAlreadyExistsException;
 import org.apache.spark.mllib.clustering.LDAModel;
 import org.librairy.modeler.lda.online.builder.CorpusBuilder;
 import org.librairy.modeler.lda.online.builder.FileBuilder;
@@ -42,6 +43,7 @@ public class TrainModelTask {
     public void run(String[] args) throws IOException {
 
         Integer size        = 50;
+        Integer vocabSize   = 100;
         Integer topics      = 50;
         Integer iterations  = 50;
         Double alpha        = 0.1;
@@ -55,37 +57,50 @@ public class TrainModelTask {
 
 
             if (args.length > 2){
-                topics = Integer.valueOf(args[2]);
+                vocabSize = Integer.valueOf(args[2]);
 
                 if (args.length > 3){
-                    iterations = Integer.valueOf(args[3]);
-
+                    topics = Integer.valueOf(args[3]);
 
                     if (args.length > 4){
-                        perplexity = Boolean.valueOf(args[4]);
-
+                        iterations = Integer.valueOf(args[4]);
 
                         if (args.length > 5){
-                            alpha = Double.valueOf(args[5]);
+                            perplexity = Boolean.valueOf(args[5]);
 
 
                             if (args.length > 6){
-                                beta = Double.valueOf(args[6]);
+                                alpha = Double.valueOf(args[6]);
+
+
+                                if (args.length > 7){
+                                    beta = Double.valueOf(args[7]);
+                                }
                             }
                         }
                     }
                 }
+
             }
+
         }
 
 
-        Corpus corpus = corpusBuilder.newTrainingCorpus(size);
+        //Corpus corpus = corpusBuilder.newTrainingCorpus(size);
 
-        LDAModel model = modelBuilder.train(corpus,alpha,beta,topics,iterations,perplexity);
+        try{
+            LDAModel model = modelBuilder.train(size,vocabSize,alpha,beta,topics,iterations,perplexity);
 
-        File file = FileBuilder.newFile(BASE_DIRECTORY +"/model-"+size+"-"+topics+"-"+iterations,true);
-        LOG.info("Saving the model: " + file.getAbsolutePath());
-        model.save(sparkBuilder.sc.sc(),"file://"+file.getAbsolutePath());
+            String name = "/model-"+size+"-"+topics+"-"+iterations;
+            LOG.info("Saving the model: " + name);
+            model.save(sparkBuilder.sc.sc(),"hdfs://zavijava.dia.fi.upm.es/tmp/models/"+name);
+        }catch (Exception e){
+            if (e instanceof FileAlreadyExistsException) {
+                LOG.warn(e.getMessage());
+            }else {
+                LOG.error("Error building model", e);
+            }
+        }
 
     }
 }
