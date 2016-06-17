@@ -35,11 +35,18 @@ public class SparkBuilder {
                 .set("spark.task.maxFailures","1")
                 .set("spark.cassandra.input.split.size_in_mb","1280")
                 .set("spark.driver.maxResultSize","0")
-                .set("spark.executor.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps")
+                .set("spark.executor.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps " +
+                        "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8090 -Dcom.sun.management" +
+                        ".jmxremote.rmi.port=8091 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun" +
+                        ".management.jmxremote.ssl=false -Djava.rmi.server.hostname=138.100.15.128 -Djava.net.preferIPv4Stack=true")
+                .set("spark.driver.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps " +
+                        "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8095 -Dcom.sun.management" +
+                        ".jmxremote.rmi.port=8096 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun" +
+                        ".management.jmxremote.ssl=false -Djava.rmi.server.hostname=138.100.15.128 -Djava.net.preferIPv4Stack=true")
                 .set("spark.reducer.maxSizeInFlight","200m")
                 .set("spark.eventLog.enabled", "true")
                 .set("spark.eventLog.dir", "hdfs://zavijava.dia.fi.upm.es/tmp/logs")
-                .set("spark.default.parallelism","200")
+                .set("spark.default.parallelism","500")
 //                .set("spark.akka.frameSize","2047")
 //                .set("spark.network.timeout","1200")
 //                .set("spark.executor.heartbeatInterval","300")
@@ -71,5 +78,10 @@ public class SparkBuilder {
 
         sc = new JavaSparkContext(sconf);
         sc.setCheckpointDir("hdfs://zavijava.dia.fi.upm.es/tmp/checkpoints");
+    }
+
+
+    public void close(){
+        sc.close();
     }
 }

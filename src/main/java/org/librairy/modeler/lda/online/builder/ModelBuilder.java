@@ -13,6 +13,8 @@ import org.apache.spark.ml.feature.StopWordsRemover;
 import org.apache.spark.ml.feature.Tokenizer;
 import org.apache.spark.mllib.clustering.*;
 import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -24,11 +26,16 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.storage.StorageLevel;
 import org.librairy.modeler.lda.online.data.Corpus;
+import org.librairy.modeler.lda.online.functions.RowToPair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import scala.Function1;
+import scala.Function1$class;
 import scala.Tuple2;
+import scala.reflect.ClassTag;
+import scala.reflect.ClassTag$;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -211,49 +218,61 @@ public class ModelBuilder {
          * Topic Modeling
          **********************************************************************/
 
-        DataFrame df = patentsDF.limit(size);
+        DataFrame df = patentsDF
+                .limit(size)
+                .repartition(10000) //TODO To be calculated from corpus size
+                ;
 
         LOG.info("Splitting each document into words ..");
         DataFrame words = new Tokenizer()
                 .setInputCol("tokens")
                 .setOutputCol("words")
+                //.setMinTokenLength(4) // Filter away tokens with length < 4
                 .transform(df);
 
         LOG.info("Filter out stopwords");
         String[] stopwords = new String[]{"fig."};
         DataFrame filteredWords = new StopWordsRemover()
-                .setStopWords(stopwords)
-                .setCaseSensitive(false)
                 .setInputCol("words")
                 .setOutputCol("filtered")
+                .setStopWords(stopwords)
+                .setCaseSensitive(false)
                 .transform(words);
 
         LOG.info("Limiting to top `vocabSize` most common words and convert to word count vector features ..");
         CountVectorizerModel cvModel = new CountVectorizer()
-                .setVocabSize(vocabSize)
                 .setInputCol("filtered")
                 .setOutputCol("features")
+                .setVocabSize(vocabSize)
+                .setMinDF(5)    // Specifies the minimum number of different documents a term must appear in to be included in the vocabulary.
+                .setMinTF(50)   // Specifies the minimumn number of times a term has to appear in a document to be
+                // included in the vocabulary.
                 .fit(filteredWords);
 
+        Tuple2<Object, Vector> tuple = new Tuple2<Object,Vector>(0l, Vectors.dense(new double[]{1.0}));
 
-        // Spark-MLLIB Features:
+        RDD<Tuple2<Object, Vector>> documents = cvModel.transform(filteredWords).select("uri",
+                "features").map(new RowToPair(), ClassTag$.MODULE$.<Tuple2<Object, Vector>>apply(tuple.getClass()))
+                .cache();
+
+
+                // Spark-MLLIB Features:
 //        Pipeline pipeline = new Pipeline().setStages(new PipelineStage[]{tokenizer,filterer,cVectorizer});
 //        PipelineModel model = pipeline.fit(df);
 
 
-        LOG.info("Building a corpus by using bag-of-words ..");
-        JavaPairRDD<Long, Vector> countVectors = cvModel.transform(filteredWords)
-                .select("features")
-                .toJavaRDD()
-                .map(row -> (Vector) row.get(0))
-                .zipWithIndex()
-                .mapToPair(r -> r.swap())
-                .cache()
-                .repartition(30);
-        ;
+                LOG.info("Building a corpus by using bag-of-words ..");
 
-//        countVectors
-//                .persist(StorageLevel.MEMORY_AND_DISK());
+//        JavaPairRDD<Long, Vector> documents = cvModel.transform(filteredWords)
+//                .select("features")
+//                .toJavaRDD()
+//                .map(row -> (Vector) row.get(0))
+//                .zipWithIndex()
+//                .mapToPair(r -> r.swap())
+////                .repartition(32) // 32  //500
+//                .cache();
+//        ;
+
 
 
         LOG.info("Configuring LDA ..");
@@ -261,18 +280,16 @@ public class ModelBuilder {
 
         LDA lda = new LDA()
                 .setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(0.8))
-//                .setOptimizer(new OnlineLDAOptimizer().setMiniBatchFraction(0.05 + 1.0 / size))
                 .setK(topics)
-                //.setMaxIterations(2)
                 .setMaxIterations(iterations)
                 .setDocConcentration(alpha)
                 .setTopicConcentration(beta)
-                .setCheckpointInterval(2)
+//                .setCheckpointInterval(2)
                 ;
 
         LOG.info("Running LDA on corpus ..");
         Instant startModel = Instant.now();
-        LDAModel ldaModel = lda.run(countVectors);
+        LDAModel ldaModel = lda.run(documents);
         Instant endModel = Instant.now();
 
         Instant end = Instant.now();
