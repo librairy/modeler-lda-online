@@ -32,7 +32,7 @@ public class SparkBuilder {
 //                .setJars(new String[]{"/opt/spark/inbox/modeler-lda-online-0.1.jar"})
                 .set("spark.cassandra.connection.host", "wiig.dia.fi.upm.es")
                 .set("spark.cassandra.connection.port", "5011")
-                .set("spark.task.maxFailures","1")
+                .set("spark.task.maxFailures","4")
                 .set("spark.cassandra.input.split.size_in_mb","1280")
                 .set("spark.driver.maxResultSize","0")
                 .set("spark.executor.extraJavaOptions", "-XX:+UseG1GC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps " +

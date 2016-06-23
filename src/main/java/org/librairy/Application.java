@@ -1,15 +1,7 @@
 package org.librairy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.spark.mllib.clustering.DistributedLDAModel;
-import org.apache.spark.mllib.clustering.LDAModel;
-import org.apache.spark.mllib.clustering.LocalLDAModel;
-import org.librairy.modeler.lda.online.builder.CorpusBuilder;
-import org.librairy.modeler.lda.online.builder.FileBuilder;
-import org.librairy.modeler.lda.online.builder.ModelBuilder;
-import org.librairy.modeler.lda.online.builder.SparkBuilder;
-import org.librairy.modeler.lda.online.data.Corpus;
-import org.librairy.modeler.lda.online.data.Vocabulary;
+import org.librairy.modeler.lda.online.builder.EMModelBuilder;
+import org.librairy.modeler.lda.online.builder.OnlineModelBuilder;
 import org.librairy.modeler.lda.online.task.PrepareModelTask;
 import org.librairy.modeler.lda.online.task.TestModelTask;
 import org.librairy.modeler.lda.online.task.TrainModelTask;
@@ -31,12 +23,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 
 /**
  * Created on 28/04/16:
@@ -76,6 +65,8 @@ public class Application {
         try {
             Instant start = Instant.now();
 
+            LOG.info("Args: " + Arrays.asList(args));
+
             ApplicationContext ctx = SpringApplication.run(Application.class, args);
 
 
@@ -84,7 +75,9 @@ public class Application {
 
 
             String task = args[0];
-            if (task.equalsIgnoreCase("train")) new TrainModelTask(ctx).run(args);
+            if (task.equalsIgnoreCase("train") || task.equalsIgnoreCase("trainOnline")) new TrainModelTask(ctx, ctx
+                    .getBean(OnlineModelBuilder.class)).run(args);
+            else if (task.equalsIgnoreCase("trainEM")) new TrainModelTask(ctx,ctx.getBean(EMModelBuilder.class)).run(args);
             else if (task.equalsIgnoreCase("test")) new TestModelTask(ctx).run(args);
             else if (task.equalsIgnoreCase("prepare")) new PrepareModelTask(ctx).run(args);
             else throw new RuntimeException

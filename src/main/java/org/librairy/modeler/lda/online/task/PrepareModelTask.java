@@ -1,40 +1,18 @@
 package org.librairy.modeler.lda.online.task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import org.apache.commons.collections.iterators.ArrayListIterator;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.mllib.linalg.Vector;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.cassandra.CassandraSQLContext;
-import org.apache.spark.storage.StorageLevel;
 import org.librairy.modeler.lda.online.builder.CorpusBuilder;
-import org.librairy.modeler.lda.online.builder.ModelBuilder;
+import org.librairy.modeler.lda.online.builder.OnlineModelBuilder;
 import org.librairy.modeler.lda.online.builder.SparkBuilder;
-import org.librairy.modeler.lda.online.data.BOW;
-import org.librairy.modeler.lda.online.data.SparseVector;
-import org.librairy.modeler.lda.online.data.Vocabulary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import scala.Tuple2;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created on 09/05/16:
@@ -50,13 +28,13 @@ public class PrepareModelTask {
     public static final String VECTOR_FOLDER    = "/opt/spark/vector/";
 
     private final CorpusBuilder corpusBuilder;
-    private final ModelBuilder modelBuilder;
+    private final OnlineModelBuilder modelBuilder;
     private final SparkBuilder sparkBuilder;
     private final ObjectMapper jsonMapper;
 
     public PrepareModelTask(ApplicationContext ctx) throws IOException {
         this.corpusBuilder  = ctx.getBean(CorpusBuilder.class);
-        this.modelBuilder   = ctx.getBean(ModelBuilder.class);
+        this.modelBuilder   = ctx.getBean(OnlineModelBuilder.class);
         this.sparkBuilder   = ctx.getBean(SparkBuilder.class);
         this.jsonMapper     = new ObjectMapper();
 
